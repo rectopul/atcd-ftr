@@ -32,6 +32,33 @@
 $ npm install
 ```
 
+## Criar um arquivo .env com as informações do banco de dados
+# Exemplo:
+
+```bash
+DATABASE_URL="postgresql://user:password@host:5432/database?schema=public"
+APP_SECRET="senha-do-app"
+JWT_REFRESH_SECRET="senha-do-jwt"
+```
+
+## rodar as migrations no banco
+
+```bash
+npx prisma migrate dev
+```
+
+### criar usuário admin
+
+Para criar o usuário admin basta enviar uma requisição POST para o aplicativo na seguinte rota ('/users') com os dados em JSON no body
+```bash
+{
+	"type": "super",
+	"name": "RCT",
+	"user": "admin",
+	"password": "admin"
+}
+```
+
 ## Running the app
 
 ```bash
