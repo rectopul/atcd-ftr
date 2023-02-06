@@ -5,16 +5,29 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from '../config/multer.config';
 import { UserImageService } from '../user_image/user_image.service';
 import { Express } from 'express';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService, private userImageService: UserImageService) {}
 
   @Post()
-  async create(@Body() createUserDto: CreateUserDto) {
+  async create(@Body() createUserDto: CreateUserDto, @Req() req) {
     try {
-      return await this.usersService.create(createUserDto);
+      const token = req.cookies.token || ''
+      return await this.usersService.create(token, createUserDto);
 
+    } catch (error) {
+      throw new HttpException(error?.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+
+  @Patch()
+  async update(@Req() req, @Body() updateUserDto: UpdateUserDto) {
+    try {
+      const token = req.cookies.token || ''
+
+      return await this.usersService.update(token, updateUserDto)
     } catch (error) {
       throw new HttpException(error?.message, HttpStatus.BAD_REQUEST)
     }

@@ -1,5 +1,29 @@
 const client =(() => {
 
+    function TestaCPF(strCPF) {
+        var Soma;
+        var Resto;
+        Soma = 0;
+
+        let cleanCPF = strCPF.replace(/\.|\-/g, '')
+
+      if (cleanCPF == "00000000000") return false;
+    
+      for (i=1; i<=9; i++) Soma = Soma + parseInt(cleanCPF.substring(i-1, i)) * (11 - i);
+      Resto = (Soma * 10) % 11;
+    
+        if ((Resto == 10) || (Resto == 11))  Resto = 0;
+        if (Resto != parseInt(cleanCPF.substring(9, 10)) ) return false;
+    
+      Soma = 0;
+        for (i = 1; i <= 10; i++) Soma = Soma + parseInt(cleanCPF.substring(i-1, i)) * (12 - i);
+        Resto = (Soma * 10) % 11;
+    
+        if ((Resto == 10) || (Resto == 11))  Resto = 0;
+        if (Resto != parseInt(cleanCPF.substring(10, 11) ) ) return false;
+        return true;
+    }
+
     function masks() {
         const inputCPF = document.querySelector('input#cpf');
         //cpf
@@ -104,7 +128,6 @@ const client =(() => {
 
 
         Array.from(elements).forEach(el => {
-            console.log(`elements get: `, el)
             if(el.name) data[el.name] = el.value
         })
 
@@ -123,45 +146,30 @@ const client =(() => {
             e.preventDefault()
 
             try {
+
+                const data = getFormData(form)
+
+
+                if(data?.senha?.length < 6) return notyf.open({
+                    type: 'warning',
+                    message: `O Campo senha deve ter no mínimo 6 dígitos`
+                })
+
+                if(!TestaCPF(data?.cpf)){
+                     notyf.open({
+                        type: 'warning',
+                        message: `CPF inválido`
+                    })
+
+                    return
+                }
                 
                 form.querySelector('button[type="submit"]').innerHTML = `
                 <div class="spinner-border text-light" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>`
 
-                const data = getFormData(form)
 
-
-                const options = {
-                    method: form.dataset.client ? 'PATCH' : 'POST',
-                    headers: {
-                        'content-type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                }
-
-                const response = await fetch(form.dataset.client ? `/clients/${form.dataset.client}` : '/clients', options)
-
-                const res = await response.json()
-
-                if(response.status === 400) {
-                    form.querySelector('button[type="submit"]').innerHTML = `Login`
-                    return notyf.open({
-                        type: 'warning',
-                        message: res?.message
-                    })
-                    
-                }
-
-                notyf.open({
-                    type: 'info',
-                    message: `Login efetuado com sucesso!`
-                })
-
-                setTimeout(() => {
-                    if(form.dataset.client) return window.location.href = `https://app.cartaoatacadao.com.br`
-                    window.location.href = `/modules/account/update/${res.id}`
-                }, 1500);
             } catch (error) {
                 console.log(`erro`, error)
 

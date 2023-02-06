@@ -6,7 +6,7 @@ import { ConsoleLogger } from '@nestjs/common/services';
 
 @Controller('admin/dashboard')
 export class DashboardController {
-    constructor(private auth: UserByToken, private readonly prisma: PrismaService){}
+    constructor(private auth: UserByToken, private readonly prisma: PrismaService, private readonly jsonToken: JsonWebToken){}
 
     @Get()
     @Render('pages/dashboard')
@@ -20,9 +20,7 @@ export class DashboardController {
 
             const { id: jti } = await this.auth.checkToken(token)
 
-            const jsonWebToken = new JsonWebToken()
-
-            if(! await jsonWebToken.checkToken(jti)) return res.redirect('/panel/login')
+            if(! await this.jsonToken.checkToken(jti)) return res.redirect('/panel/login')
 
             const refreshToken = await this.prisma.refreshToken.findFirst({
                 where: {id: jti},

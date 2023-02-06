@@ -5,6 +5,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt'
 import { JsonWebToken } from '../modules/JsonWebToken';
 import { SessionService } from '../session/session.service';
+import { User } from '@prisma/client';
+import { UserByToken } from 'src/session/auth';
 const { v4: uuidv4 } = require('uuid');
 
 @Injectable()
@@ -12,12 +14,15 @@ export class UsersService {
   constructor(
     private prisma: PrismaService, 
     private jsonWebToken: JsonWebToken, 
-    private session: SessionService
+    private session: SessionService,
+    private  readonly auth: UserByToken
   ){}
 
 
-  async create(createUserDto: CreateUserDto): Promise<object> {
+  async create(token: string, createUserDto: CreateUserDto): Promise<object> {
     try {
+
+      const dados = await this.auth.checkToken(token)
 
       createUserDto.password_hash = bcrypt.hashSync(createUserDto.password, 12)
 
@@ -37,7 +42,7 @@ export class UsersService {
         user,
         accessToken,
         tokenToWhitelist
-    }
+      }
     } catch (error) {
       throw new Error(error?.message || error?.error)
     }
@@ -52,8 +57,30 @@ export class UsersService {
     return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(token: string, updateUserDto: UpdateUserDto): Promise<User> {
+    try {
+      const { id: jti } = await this.auth.checkToken(token)
+
+      if(! await this.jsonWebToken.checkToken(jti)) throw new Error(`Permissão não concedida`)
+
+      const refreshToken = await this.prisma.refreshToken.findFirst({
+          where: {id: jti},
+          include: { User: { include: { UserImage: true } } }
+      })
+
+      if(!refreshToken) throw new Error(`User not exist`)
+
+      updateUserDto.password_hash = bcrypt.hashSync(updateUserDto.password, 12)
+
+      delete updateUserDto.password
+
+      const newUser = await this.prisma.user.update({where: { id: refreshToken.User.id }, data:updateUserDto })
+
+      return newUser
+    } catch (error) {
+      console.log(error)
+      throw new Error(error?.message || error?.error)
+    }
   }
 
   remove(id: number) {
